@@ -11,5 +11,6 @@ class Settings(BaseSettings):
     )
     BOT_TOKEN: str
     PG_URL: str
+    PG_URL_ALEMBIC: str
 
 settings = Settings()
