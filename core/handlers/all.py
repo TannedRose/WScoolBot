@@ -44,7 +44,7 @@ async def back_to_main(callback: CallbackQuery, bot: Bot):
     await callback.answer()
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
-                                text="Вы в главном меню",
+                                text=txt.main,
                                 reply_markup=ikb.main)
 
 
@@ -56,7 +56,7 @@ async def settings(callback: CallbackQuery, bot: Bot):
     keyboard = await ikb.settings(profile[0], profile[1])
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
-                                text="Настройки",
+                                text=txt.setup,
                                 reply_markup=keyboard)
 
 @router.callback_query(F.data == "notifications")
@@ -67,7 +67,7 @@ async def notifications(callback: CallbackQuery, bot: Bot):
     keyboard = await ikb.settings(profile[0], profile[1])
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
-                                text="Настройки",
+                                text=txt.setup,
                                 reply_markup=keyboard)
 
 @router.callback_query(F.data == "query")
@@ -78,7 +78,7 @@ async def notifications(callback: CallbackQuery, bot: Bot):
     keyboard = await ikb.settings(profile[0], profile[1])
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
-                                text="Настройки",
+                                text=txt.setup,
                                 reply_markup=keyboard)
 
 
@@ -90,4 +90,4 @@ async def all_good(callback: CallbackQuery, bot: Bot):
     await rq.update_query_by_tg_id(user_tg_id=callback.from_user.id, kp=kp, query=health)
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
-                                text="Спасибо за отзыв!", reply_markup=ikb.main)
+                                text="Спасибо, что доверяете нам☺️", reply_markup=ikb.main)

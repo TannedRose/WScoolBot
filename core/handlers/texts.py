@@ -3,6 +3,21 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Tuple, Dict, Any
 
 
+
+setup = """
+⚙️ Настройки
+
+✨ Уведомления (8:00)  
+📅 Утром получите прогноз на день  
+
+✨ Опрос (20:00)  
+🌙 Вечером бот спросит о вашем самочувствии
+"""
+
+
+main = """
+✅ Вы в главном меню
+"""
 async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
     url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
 
@@ -118,179 +133,3 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         return max_kp
     else:
         return "\n".join(lines)
-
-
-
-# def get_weather_and_geomag_report(
-#     lat: float = 55.1815,  # Витебск, Беларусь
-#     lon: float = 30.2073,
-#     tz: str = "Europe/Minsk"
-# ) -> Optional[Dict[str, Any]]:
-#     """
-#     Получает полный отчёт о погоде и геомагнитной обстановке.
-#     Возвращает словарь с ключами:
-#         - temperature: float (°C)
-#         - pressure: float (гПа)
-#         - humidity: int (%)
-#         - wind_speed: float (м/с)
-#         - wind_direction: int (градусы)
-#         - wind_direction_str: str ("С", "Ю-З" и т.д.)
-#         - kp: float (Kp-индекс)
-#         - kp_level: str ("спокойно", "буря G2" и т.д.)
-#         - kp_emoji: str ("🟢", "🔴")
-#         - temp_change_12h: float (ΔT за 12ч, °C)
-#         - temp_change_24h: float (ΔT за 24ч, °C)
-#         - rapid_change: bool (резкий перепад? |ΔT| ≥ 5°C/12ч)
-#     """
-#     try:
-#         # 1️⃣ Погода: Open-Meteo (бесплатно, без ключа)
-#         weather_url = (
-#             f"https://api.open-meteo.com/v1/forecast"
-#             f"?latitude={lat}&longitude={lon}"
-#             f"&current=temperature_2m,relative_humidity_2m,pressure_msl,wind_speed_10m,wind_direction_10m"
-#             f"&hourly=temperature_2m"
-#             f"&forecast_days=2"
-#             f"&timezone={tz}"
-#         )
-#         w_resp = requests.get(weather_url, timeout=10)
-#         w_resp.raise_for_status()
-#         w_data = w_resp.json()
-#
-#         cur = w_data["current"]
-#         temp = cur["temperature_2m"]
-#         humidity = int(cur["relative_humidity_2m"])
-#         pressure = cur["pressure_msl"]  # в гПа (мбар)
-#         wind_speed = cur["wind_speed_10m"]
-#         wind_dir = cur["wind_direction_10m"]
-#
-#         # Направление ветра → строка
-#         def degrees_to_direction(deg: float) -> str:
-#             dirs = ["С", "С-В", "В", "Ю-В", "Ю", "Ю-З", "З", "С-З"]
-#             idx = round(deg / 45) % 8
-#             return dirs[idx]
-#
-#         wind_dir_str = degrees_to_direction(wind_dir)
-#
-#         # Температурные перепады: смотрим изменение за 12 и 24 часа
-#         hourly_temps = w_data["hourly"]["temperature_2m"]
-#         temp_now = hourly_temps[-1]
-#         temp_12h_ago = hourly_temps[-13] if len(hourly_temps) >= 14 else temp_now
-#         temp_24h_ago = hourly_temps[-25] if len(hourly_temps) >= 26 else temp_now
-#
-#         delta_12h = temp_now - temp_12h_ago
-#         delta_24h = temp_now - temp_24h_ago
-#         rapid_change = abs(delta_12h) >= 5.0
-#
-#         # 2️⃣ Геомагнитная активность: GFZ Potsdam (kpindex.org)
-#         today = datetime.now(timezone.utc).date()
-#         kp_url = f"https://kpindex.org/api/v1/kp?from={today}&to={today}"
-#         kp_resp = requests.get(kp_url, timeout=10)
-#         kp_resp.raise_for_status()
-#         kp_data = kp_resp.json()
-#
-#         kp = 3.0  # fallback
-#         kp_type = "unknown"
-#         if kp_data and isinstance(kp_data, list):
-#             # Берём последнее актуальное (обычно 00:00 или 03:00 UTC)
-#             latest = max(kp_data, key=lambda x: x.get("datetime", ""))
-#             kp = float(latest.get("kp", 3.0))
-#             kp_type = latest.get("type", "unknown")
-#
-#         # Уровень активности
-#         if kp < 4:
-#             kp_level = "спокойно"
-#             kp_emoji = "🟢"
-#         elif kp < 5:
-#             kp_level = "неустойчиво"
-#             kp_emoji = "🟡"
-#         elif kp < 6:
-#             kp_level = "слабая буря (G1)"
-#             kp_emoji = "🟠"
-#         elif kp < 7:
-#             kp_level = "умеренная буря (G2)"
-#             kp_emoji = "🔴"
-#         elif kp < 8:
-#             kp_level = "сильная буря (G3)"
-#             kp_emoji = "⚫"
-#         elif kp < 9:
-#             kp_level = "очень сильная (G4)"
-#             kp_emoji = "🟣"
-#         else:
-#             kp_level = "экстремальная (G5)"
-#             kp_emoji = "💥"
-#
-#         return {
-#             "temperature": round(temp, 1),
-#             "pressure": round(pressure, 1),
-#             "humidity": humidity,
-#             "wind_speed": round(wind_speed, 1),
-#             "wind_direction": round(wind_dir),
-#             "wind_direction_str": wind_dir_str,
-#             "kp": round(kp, 2),
-#             "kp_level": kp_level,
-#             "kp_emoji": kp_emoji,
-#             "kp_type": kp_type,
-#             "temp_change_12h": round(delta_12h, 1),
-#             "temp_change_24h": round(delta_24h, 1),
-#             "rapid_change": rapid_change,
-#             "location": f"{lat:.2f}°N, {lon:.2f}°E",
-#             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-#         }
-#
-#     except Exception as e:
-#         print(f"❌ Ошибка получения данных: {e}")
-#         return None
-#
-#
-# def format_report(data: dict) -> str:
-#     """Форматирует отчёт в красивый вид для Telegram."""
-#     if not data:
-#         return "⚠️ Данные временно недоступны."
-#
-#     lines = [
-#         f"🌤 *Погода и среда — {data['timestamp']}*",
-#         "",
-#         f"📍 *Местоположение*: {data['location']}",
-#         "",
-#         f"🌡 *Температура*: {data['temperature']}°C",
-#         f"💧 *Влажность*: {data['humidity']}%",
-#         f"🔽 *Давление*: {data['pressure']} гПа",
-#         f"💨 *Ветер*: {data['wind_speed']} м/с, {data['wind_direction_str']} ({data['wind_direction']}°)",
-#         "",
-#         f"🧲 *Геомагнитная активность*: {data['kp_emoji']} Kp = {data['kp']} → {data['kp_level']}",
-#         f"   (источник: {'наблюдено' if data['kp_type'] == 'definitive' else 'прогноз'})",
-#         ""
-#     ]
-#
-#     # Перепады температуры
-#     d12, d24 = data["temp_change_12h"], data["temp_change_24h"]
-#     if data["rapid_change"]:
-#         lines.append(f"⚠️ *Резкий перепад температуры*: {d12:+.1f}°C за 12 часов!")
-#     else:
-#         lines.append(f"📈 *Изменение температуры*: {d12:+.1f}°C (12ч), {d24:+.1f}°C (24ч)")
-#
-#     # Рекомендации (опционально)
-#     recs = []
-#     if data["kp"] >= 5:
-#         recs.append("Следите за самочувствием при метеозависимости.")
-#     if data["rapid_change"]:
-#         recs.append("Рекомендуется избегать переохлаждения/перегрева.")
-#     if data["wind_speed"] > 10:
-#         recs.append("Сильный ветер — будьте осторожны на улице.")
-#
-#     if recs:
-#         lines.append("\n💡 *Рекомендации:*")
-#         for r in recs:
-#             lines.append(f" • {r}")
-#
-#     return "\n".join(lines)
-#
-#
-# # Пример использования:
-# if __name__ == "__main__":
-#     print("Запрашиваем данные...")
-#     report_data = get_weather_and_geomag_report()
-#     if report_data:
-#         print(format_report(report_data))
-#     else:
-#         print("Не удалось получить данные.")
