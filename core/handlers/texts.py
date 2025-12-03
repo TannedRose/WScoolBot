@@ -18,6 +18,8 @@ setup = """
 main = """
 ✅ Вы в главном меню
 """
+
+
 async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
     url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
 
@@ -106,7 +108,7 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
 
         # Источник
         if 'obs' in obs_type or 'real' in obs_type:
-            src = "📊 наблюдено"
+            src = "📊 зафиксировано"
         elif 'est' in obs_type or 'pred' in obs_type or 'forecast' in obs_type:
             src = "🔮 прогноз"
         else:
