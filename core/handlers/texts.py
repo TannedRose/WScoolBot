@@ -114,7 +114,7 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         else:
             src = "—"
 
-        lines.append(f"{emoji} *{time_hm}* — Kp = {kp:.2g} → {desc} ({src})")
+        lines.append(f"{emoji} *{time_hm}* — Kp = {kp:.2g} → {desc} {src}")
 
     if max_kp < 4:
         summary = "🟢 В целом — спокойная геомагнитная обстановка. Подходит для наблюдений за северным сиянием на высоких широтах."
