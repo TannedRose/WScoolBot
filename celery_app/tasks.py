@@ -104,7 +104,7 @@ def send_query(ids: list):
                 "inline_keyboard": [
                     [
                         {"text": "🙂 Все хорошо", "callback_data": "query all_good"},
-                        {"text": "🫨 Слабость", "callback_data": "query weakness"}
+                        {"text": "🫩 Слабость", "callback_data": "query weakness"}
                     ],
                     [
                         {"text": "🫨 Головные боли", "callback_data": "query head_pain"}
