@@ -108,9 +108,9 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
 
         # Источник
         if 'obs' in obs_type or 'real' in obs_type:
-            src = "📊 зафиксировано"
+            src = "✅"
         elif 'est' in obs_type or 'pred' in obs_type or 'forecast' in obs_type:
-            src = "🔮 прогноз"
+            src = "🌓"
         else:
             src = "—"
 
