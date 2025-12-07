@@ -71,6 +71,7 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
 
         try:
             kp = float(kp_str)
+            kp = round(kp)
         except (ValueError, TypeError):
             continue
 
