@@ -96,15 +96,15 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         elif kp < 5:
             emoji, desc = "🟡", "неустойчиво"
         elif kp < 6:
-            emoji, desc = "🟠", "слабая буря (G1)"
+            emoji, desc = "🟠", "слабая буря"
         elif kp < 7:
-            emoji, desc = "🔴", "умеренная буря (G2)"
+            emoji, desc = "🔴", "умеренная буря"
         elif kp < 8:
-            emoji, desc = "⚫", "сильная буря (G3)"
+            emoji, desc = "⚫", "сильная буря"
         elif kp < 9:
-            emoji, desc = "🟣", "очень сильная (G4)"
+            emoji, desc = "🟣", "очень сильная"
         else:
-            emoji, desc = "💥", "экстремальная (G5)"
+            emoji, desc = "💥", "экстремальная"
 
         # Источник
         if 'obs' in obs_type or 'real' in obs_type:
