@@ -31,8 +31,8 @@ class Profile(Base):
     user: Mapped["User"] = relationship(back_populates="profile")
 
 
-class Notification(Base):
-    __tablename__ = "notifications"
+class Health(Base):
+    __tablename__ = "health"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

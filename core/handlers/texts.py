@@ -115,7 +115,7 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         else:
             src = "—"
 
-        lines.append(f"{emoji} *{time_hm}* — Kp = {kp:.2g} → {desc} {src}")
+        lines.append(f"{emoji} *{time_hm}* — Kp = {kp} → {desc} {src}")
 
     if max_kp < 4:
         summary = "🟢 В целом — спокойная геомагнитная обстановка. Подходит для наблюдений за северным сиянием на высоких широтах."
@@ -131,7 +131,7 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         summary = "⚠️⚠️⚠️ Экстремальная геомагнитная активность! Возможны масштабные технологические последствия. Сияния — даже в средних широтах."
 
     lines.append("")
-    lines.append(f"📌 *Макс. Kp за день*: {max_kp:.2g} → {summary}")
+    lines.append(f"📌 *Макс. Kp за день*: {max_kp} → {summary}")
     if only_max:
         return max_kp
     else:
