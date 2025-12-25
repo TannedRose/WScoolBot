@@ -1,8 +1,5 @@
-from typing import Optional
-
-from sqlalchemy import BigInteger, ForeignKey, String, Column, Integer, INT, VARCHAR, Boolean
-from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, Relationship, mapped_column, relationship
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
+from sqlalchemy import BigInteger, ForeignKey, String, Integer, Boolean
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):

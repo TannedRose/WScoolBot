@@ -5,16 +5,13 @@ from celery.schedules import crontab
 broker_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/1")
 result_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/2")
 
-# Создаём экземпляр Celery
 celery = Celery(
     "infinitycoin",
     broker=broker_url,
     backend=result_backend,
 )
 
-# Настройки
 celery.conf.update(
-    # Сериализация — поддержка Decimal
     result_serializer="json",
     task_serializer="json",
     accept_content=["json"],
@@ -22,7 +19,6 @@ celery.conf.update(
         "json_encoder": "celery_app.utils.DecimalEncoder",
         "json_decoder": "json.JSONDecoder",
     },
-    # Расписание (beat)
     beat_schedule={
         'notification': {
             'task': 'celery_app.tasks.send_notification',

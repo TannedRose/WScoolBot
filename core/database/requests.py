@@ -1,9 +1,9 @@
-from sqlalchemy import select, update, delete, BigInteger, text
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload, aliased
+from sqlalchemy.orm import selectinload
 
 
-from core.database.models import User, Profile, Notification
+from core.database.models import User, Profile, Health
 from core.database.session import LocalSession
 
 async def create_user_with_profile(user_tg_id: int, username: str) -> bool:
@@ -34,41 +34,32 @@ async def get_profile_by_tg_id(
         user = result.scalar_one_or_none()
         return user.profile.notifications, user.profile.qwery
 
-async def edit_notif_by_tg_id(
-        user_tg_id: int,
-):
-    async with LocalSession() as session:
-        stmt = (
-            select(User)
-            .where(User.user_tg_id == user_tg_id)
-            .options(selectinload(User.profile))
-            .limit(1)
-        )
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if user.profile.notifications:
-            user.profile.notifications = False
-        else:
-            user.profile.notifications = True
-        await session.commit()
 
-async def edit_query_by_tg_id(
-        user_tg_id: int,
+async def toggle_profile_flag(
+    user_tg_id: int,
+    field: str,
 ):
     async with LocalSession() as session:
         stmt = (
             select(User)
             .where(User.user_tg_id == user_tg_id)
             .options(selectinload(User.profile))
-            .limit(1)
         )
+
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
-        if user.profile.qwery:
-            user.profile.qwery = False
-        else:
-            user.profile.qwery = True
+
+        if not user or not user.profile:
+            return False
+
+        if not hasattr(user.profile, field):
+            raise AttributeError(f"Profile has no field '{field}'")
+
+        current_value = getattr(user.profile, field)
+        setattr(user.profile, field, not current_value)
+
         await session.commit()
+        return True
 
 
 async def get_user_ids(for_notifications: bool = False, for_qwery: bool = False):
@@ -83,7 +74,7 @@ async def get_user_ids(for_notifications: bool = False, for_qwery: bool = False)
             stmt = (
                 select(User.user_tg_id)
                 .join(Profile, User.id == Profile.user_id)
-                .where(Profile.qwery.is_(True))
+                .where(Profile.query.is_(True))
             )
         result = await session.execute(stmt)
         return result.scalars().all()
@@ -109,11 +100,11 @@ async def update_query_by_tg_id(
         user_id = result.scalar_one_or_none()
 
         if user_id is None:
-            return False  # Пользователь не найден
+            return False
 
 
         # Создаём запись
-        new_notification = Notification(
+        new_notification = Health(
             user_id=user_id,
             health=query,
             kp=kp

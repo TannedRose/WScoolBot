@@ -1,8 +1,22 @@
-import requests
+import math
+
+import aiohttp
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Tuple, Dict, Any
+from typing import List, Tuple
 
+start = """
+🌌 Добро пожаловать!  
+Вы в пространстве, где космос делится своими тайнами.
+Здесь вы узнаете, когда солнечный ветер усиливается, а магнитные бури могут повлиять на самочувствие и настроение.
 
+☀️ Я буду вашим проводником по небесным ритмам:
+
+    расскажу о текущей активности Солнца,
+
+    предупрежу о грядущих всплесках,
+
+🔔 Подписывайтесь на прогнозы — и пусть космос больше не застает вас врасплох!
+"""
 
 setup = """
 ⚙️ Настройки
@@ -23,10 +37,14 @@ main = """
 async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
     url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
 
+    # --- загрузка данных (НЕ блокирует event loop) ---
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=10)
+        ) as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                data = await response.json()
     except Exception as e:
         return f"❌ Ошибка загрузки данных: {e}"
 
@@ -34,17 +52,26 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         return "❌ Пустой ответ от NOAA."
 
     headers = data[0]
-    # Гибкий поиск столбцов — на случай переименований
+
     try:
-        time_col = next(i for i, h in enumerate(headers) if
-                        'time' in h.lower() and ('tag' in h.lower() or h.lower() in {'time', 'timestamp'}))
-        kp_col = next(i for i, h in enumerate(headers) if 'kp' in h.lower())
-        obs_col = next((i for i, h in enumerate(headers) if 'obs' in h.lower() or 'status' in h.lower()), None)
+        time_col = next(
+            i for i, h in enumerate(headers)
+            if "time" in h.lower()
+        )
+        kp_col = next(
+            i for i, h in enumerate(headers)
+            if "kp" in h.lower()
+        )
+        obs_col = next(
+            (i for i, h in enumerate(headers)
+             if "obs" in h.lower() or "forecast" in h.lower() or "status" in h.lower()),
+            None
+        )
     except StopIteration:
-        return f"❌ Не найдены столбцы. Заголовки: {headers}"
+        return f"❌ Не найдены нужные столбцы. Заголовки: {headers}"
 
     target_date = (datetime.now(timezone.utc).date() + timedelta(days=days_ahead))
-    target_rows: List[Tuple[datetime, float, str]] = []
+    rows: List[Tuple[datetime, int, str]] = []
 
     for row in data[1:]:
         if len(row) <= max(time_col, kp_col):
@@ -52,17 +79,18 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
 
         time_str = row[time_col]
         kp_str = row[kp_col]
-        obs_type = row[obs_col].lower() if obs_col is not None and row[obs_col] else "unknown"
+        obs_type = row[obs_col].lower() if obs_col is not None and row[obs_col] else ""
 
         if not time_str or not kp_str:
             continue
 
         try:
-            # Поддерживаем оба формата: "2025-11-21 00:00:00" и "2025-11-21T00:00:00Z"
-            if 'T' in time_str:
-                dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+            if "T" in time_str:
+                dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
             else:
-                dt = datetime.strptime(time_str.strip(), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                dt = datetime.strptime(
+                    time_str.strip(), "%Y-%m-%d %H:%M:%S"
+                ).replace(tzinfo=timezone.utc)
         except Exception:
             continue
 
@@ -70,47 +98,43 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
             continue
 
         try:
-            kp = float(kp_str)
-            kp = round(kp)
+            kp = math.ceil(float(kp_str))  # безопаснее для Kp
         except (ValueError, TypeError):
             continue
 
-        target_rows.append((dt, kp, obs_type))
+        rows.append((dt, kp, obs_type))
 
-    if not target_rows:
-        date_fmt = target_date.strftime("%d.%m.%Y")
-        return f"⚠️ Данные за {date_fmt} пока не опубликованы."
+    if not rows:
+        return f"⚠️ Данные за {target_date.strftime('%d.%m.%Y')} пока не опубликованы."
 
-    target_rows.sort(key=lambda x: x[0])
+    rows.sort(key=lambda x: x[0])
+
+    max_kp = max(kp for _, kp, _ in rows)
+    if only_max:
+        return max_kp
+
     date_str = target_date.strftime("%d.%m.%Y")
-
     lines = [f"🧲 *Геомагнитная обстановка — {date_str}*"]
 
-    max_kp = max(kp for _, kp, _ in target_rows)
-
-    for dt, kp, obs_type in target_rows:
+    for dt, kp, obs in rows:
         time_hm = dt.strftime("%H:%M")
 
-        # Эмодзи и описание
         if kp < 4:
             emoji, desc = "🟢", "спокойно"
         elif kp < 5:
             emoji, desc = "🟡", "неустойчиво"
         elif kp < 6:
-            emoji, desc = "🟠", "слабая буря"
+            emoji, desc = "🟠", "слабая буря (G1)"
         elif kp < 7:
-            emoji, desc = "🔴", "умеренная буря"
+            emoji, desc = "🔴", "умеренная буря (G2)"
         elif kp < 8:
-            emoji, desc = "⚫", "сильная буря"
-        elif kp < 9:
-            emoji, desc = "🟣", "очень сильная"
+            emoji, desc = "⚫", "сильная буря (G3)"
         else:
-            emoji, desc = "💥", "экстремальная"
+            emoji, desc = "💥", "экстремальная буря"
 
-        # Источник
-        if 'obs' in obs_type or 'real' in obs_type:
-            src = "✅"
-        elif 'est' in obs_type or 'pred' in obs_type or 'forecast' in obs_type:
+        if "obs" in obs or "real" in obs:
+            src = "☑️"
+        elif "forecast" in obs or "pred" in obs or "est" in obs:
             src = "🌓"
         else:
             src = "—"
@@ -118,21 +142,24 @@ async def get_kp_forecast_report(days_ahead: int = 0, only_max: bool = False):
         lines.append(f"{emoji} *{time_hm}* — Kp = {kp} → {desc} {src}")
 
     if max_kp < 4:
-        summary = "🟢 В целом — спокойная геомагнитная обстановка. Подходит для наблюдений за северным сиянием на высоких широтах."
+        summary = "🟢 Спокойная геомагнитная обстановка."
     elif max_kp < 5:
-        summary = "🟡 Небольшие возмущения. Возможны слабые проявления полярных сияний."
+        summary = "🟡 Небольшие возмущения."
     elif max_kp < 6:
-        summary = "🟠 Слабая геомагнитная буря (G1). Сияния возможны уже на широте Санкт-Петербурга и Минска."
+        summary = "🟠 Слабая буря (G1)."
     elif max_kp < 7:
-        summary = "🔴 Умеренная буря (G2). Сияния могут наблюдаться до Москвы и Киева. Возможны кратковременные перебои в КВ-связи."
+        summary = "🔴 Умеренная буря (G2)."
     elif max_kp < 8:
-        summary = "⚫ Сильная буря (G3). Возможны сбои в спутниковой навигации и на ЛЭП. Яркие сияния — до юга Европы."
+        summary = "⚫ Сильная буря (G3)."
     else:
-        summary = "⚠️⚠️⚠️ Экстремальная геомагнитная активность! Возможны масштабные технологические последствия. Сияния — даже в средних широтах."
+        summary = "⚠️ Экстремальная геомагнитная активность!"
 
     lines.append("")
-    lines.append(f"📌 *Макс. Kp за день*: {max_kp} → {summary}")
-    if only_max:
-        return max_kp
-    else:
-        return "\n".join(lines)
+    lines.append(f"📌 *Макс. Kp за день*: {max_kp}")
+    lines.append(summary)
+
+    return "\n".join(lines)
+
+
+
+gratitude = "Спасибо, что доверяете нам☺️"
