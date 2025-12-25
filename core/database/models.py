@@ -13,7 +13,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(128), default="None")
 
     profile: Mapped["Profile"] = relationship(back_populates="user", uselist=False)
-    notification: Mapped["Notification"] = relationship(back_populates="user", uselist=False)
+    health: Mapped["Health"] = relationship(back_populates="user", uselist=False)
 
 
 
@@ -36,5 +36,5 @@ class Health(Base):
     health: Mapped[str] = mapped_column(String)
     kp : Mapped[int] = mapped_column(Integer)
 
-    user: Mapped["User"] = relationship(back_populates="notification")
+    user: Mapped["User"] = relationship(back_populates="health")
 

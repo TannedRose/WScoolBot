@@ -32,7 +32,7 @@ async def get_profile_by_tg_id(
         )
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
-        return user.profile.notifications, user.profile.qwery
+        return user.profile.notifications, user.profile.query
 
 
 async def toggle_profile_flag(
