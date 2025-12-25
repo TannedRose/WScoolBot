@@ -26,7 +26,7 @@ class Profile(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     notifications: Mapped[bool] = mapped_column(Boolean, default=True)
-    qwery: Mapped[bool] = mapped_column(Boolean, default=True)
+    query: Mapped[bool] = mapped_column(Boolean, default=True)
 
     user: Mapped["User"] = relationship(back_populates="profile")
 
