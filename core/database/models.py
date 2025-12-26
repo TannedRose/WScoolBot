@@ -24,6 +24,7 @@ class Profile(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     notifications: Mapped[bool] = mapped_column(Boolean, default=True)
     query: Mapped[bool] = mapped_column(Boolean, default=True)
+    min_kp_notification: Mapped[int] = mapped_column(Integer, default=1)
 
     user: Mapped["User"] = relationship(back_populates="profile")
 

@@ -12,14 +12,11 @@ import nest_asyncio
 
 BOT_TOKEN = settings.BOT_TOKEN
 
-def send_notif(ids: list):
+
+def send_notif(ids: list[int], kp: int):
     if not BOT_TOKEN:
         print("⚠️ Telegram bot token или chat ID не заданы")
         return
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        nest_asyncio.apply()
-    kp = loop.run_until_complete(txt.get_kp_forecast_report(only_max=True))
     if kp < 4:
         desc = (
             f"Сегодня максимальный Kp-индекс будет <b>{kp}</b> — спокойная геомагнитная обстановка.\n\n"
@@ -123,11 +120,16 @@ def send_notification():
         loop = asyncio.get_event_loop()
         if loop.is_running():
             nest_asyncio.apply()
-        users_ids = loop.run_until_complete(rq.get_user_ids(for_notifications=True))
-        send_notif(users_ids)
+
+        kp = loop.run_until_complete(txt.get_kp_forecast_report(only_max=True))
+
+        users_ids = loop.run_until_complete(rq.get_user_ids_for_kp(kp))
+
+        send_notif(users_ids, kp)
     except Exception as e:
         error_msg = f"{type(e).__name__}: {e}"
         print(f"❌ Ошибка: {error_msg}")
+
 
 
 
@@ -136,5 +138,5 @@ def query_user():
     loop = asyncio.get_event_loop()
     if loop.is_running():
         nest_asyncio.apply()
-    ids = loop.run_until_complete(rq.get_user_ids(for_qwery=True))
+    ids = loop.run_until_complete(rq.get_user_ids_for_query())
     send_query(ids)

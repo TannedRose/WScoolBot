@@ -32,7 +32,7 @@ async def get_profile_by_tg_id(
         )
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
-        return user.profile.notifications, user.profile.query
+        return user.profile.notifications, user.profile.query, user.profile.min_kp_notification
 
 
 async def toggle_profile_flag(
@@ -62,31 +62,16 @@ async def toggle_profile_flag(
         return True
 
 
-async def get_user_ids(for_notifications: bool = False, for_qwery: bool = False):
-    async with LocalSession() as session:
-        if for_notifications:
-            stmt = (
-                select(User.user_tg_id)
-                .join(Profile, User.id == Profile.user_id)
-                .where(Profile.notifications.is_(True))
-            )
-        if for_qwery:
-            stmt = (
-                select(User.user_tg_id)
-                .join(Profile, User.id == Profile.user_id)
-                .where(Profile.query.is_(True))
-            )
-        result = await session.execute(stmt)
-        return result.scalars().all()
-
-
-async def get_all_user_ids():
+async def get_user_ids_for_query():
     async with LocalSession() as session:
         stmt = (
             select(User.user_tg_id)
+            .join(Profile, User.id == Profile.user_id)
+            .where(Profile.query.is_(True))
         )
         result = await session.execute(stmt)
         return result.scalars().all()
+
 
 async def update_query_by_tg_id(
         user_tg_id: int,
@@ -103,7 +88,6 @@ async def update_query_by_tg_id(
             return False
 
 
-        # Создаём запись
         new_notification = Health(
             user_id=user_id,
             health=query,
@@ -112,3 +96,39 @@ async def update_query_by_tg_id(
         session.add(new_notification)
         await session.commit()
         return True
+
+
+async def get_user_ids_for_kp(kp: int) -> list[int]:
+    async with LocalSession() as session:
+        stmt = (
+            select(User.user_tg_id)
+            .join(Profile, User.id == Profile.user_id)
+            .where(Profile.min_kp_notification <= kp)
+        )
+        result = await session.execute(stmt)
+        return [row[0] for row in result.all()]
+
+
+
+async def change_min_kp_notification(
+    user_tg_id: int,
+    delta: int,
+) -> bool:
+    async with LocalSession() as session:
+        stmt = (
+            select(User)
+            .where(User.user_tg_id == user_tg_id)
+            .options(selectinload(User.profile))
+        )
+
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user or not user.profile:
+            return False
+
+        user.profile.min_kp_notification += delta
+
+        await session.commit()
+        return True
+

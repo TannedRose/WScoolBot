@@ -46,7 +46,7 @@ async def back_to_main(callback: CallbackQuery, bot: Bot):
 async def settings(callback: CallbackQuery, bot: Bot):
     await callback.answer()
     profile = await rq.get_profile_by_tg_id(callback.from_user.id)
-    keyboard = await ikb.settings(profile[0], profile[1])
+    keyboard = await ikb.settings(profile[0], profile[1], profile[2])
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
                                 text=txt.setup,
@@ -57,7 +57,7 @@ async def notifications(callback: CallbackQuery, bot: Bot):
     await callback.answer()
     await rq.toggle_profile_flag(callback.from_user.id, "notifications")
     profile = await rq.get_profile_by_tg_id(callback.from_user.id)
-    keyboard = await ikb.settings(profile[0], profile[1])
+    keyboard = await ikb.settings(profile[0], profile[1], profile[2])
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
                                 text=txt.setup,
@@ -68,12 +68,43 @@ async def notifications(callback: CallbackQuery, bot: Bot):
     await callback.answer()
     await rq.toggle_profile_flag(callback.from_user.id, "query")
     profile = await rq.get_profile_by_tg_id(callback.from_user.id)
-    keyboard = await ikb.settings(profile[0], profile[1])
+    keyboard = await ikb.settings(profile[0], profile[1], profile[2])
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
                                 text=txt.setup,
                                 reply_markup=keyboard)
 
+
+@router.callback_query(F.data == "minus")
+async def minus(callback: CallbackQuery, bot: Bot):
+    min_kp = await rq.get_profile_by_tg_id(callback.from_user.id)
+    if min_kp[-1] == 1:
+        await callback.answer(txt.min_value)
+    else:
+        await callback.answer()
+        await rq.change_min_kp_notification(callback.from_user.id, -1)
+        profile = await rq.get_profile_by_tg_id(callback.from_user.id)
+        keyboard = await ikb.settings(profile[0], profile[1], profile[2])
+        await bot.edit_message_text(chat_id=callback.message.chat.id,
+                                    message_id=callback.message.message_id,
+                                    text=txt.setup,
+                                    reply_markup=keyboard)
+
+
+@router.callback_query(F.data == "plus")
+async def minus(callback: CallbackQuery, bot: Bot):
+    max_kp = await rq.get_profile_by_tg_id(callback.from_user.id)
+    if max_kp[-1] == 9:
+        await callback.answer(txt.max_value)
+    else:
+        await rq.change_min_kp_notification(callback.from_user.id, +1)
+        profile = await rq.get_profile_by_tg_id(callback.from_user.id)
+        keyboard = await ikb.settings(profile[0], profile[1], profile[2])
+        await bot.edit_message_text(chat_id=callback.message.chat.id,
+                                    message_id=callback.message.message_id,
+                                    text=txt.setup,
+                                    reply_markup=keyboard)
+    await callback.answer()
 
 @router.callback_query(F.data.startswith("query"))
 async def all_good(callback: CallbackQuery, bot: Bot):
@@ -84,3 +115,7 @@ async def all_good(callback: CallbackQuery, bot: Bot):
     await bot.edit_message_text(chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
                                 text=txt.gratitude, reply_markup=ikb.main)
+
+@router.callback_query(F.data.startswith("order_user"))
+async def _order_user(callback: CallbackQuery, bot: Bot):
+    await callback.answer(txt._order_user)
