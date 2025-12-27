@@ -7,6 +7,8 @@ import requests
 from core.settings import settings
 import core.handlers.texts as txt
 
+from celery_app.analysis import analysis
+
 import nest_asyncio
 
 
@@ -14,6 +16,9 @@ BOT_TOKEN = settings.BOT_TOKEN
 
 
 def send_notif(ids: list[int], kp: int):
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        nest_asyncio.apply()
     if not BOT_TOKEN:
         print("⚠️ Telegram bot token или chat ID не заданы")
         return
@@ -62,9 +67,14 @@ def send_notif(ids: list[int], kp: int):
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     for user_id in ids:
+        last = loop.run_until_complete(rq.get_last_health_by_kp_for_user(user_id, kp))
+        if last is not None:
+            health = loop.run_until_complete(analysis(last))
+        else:
+            health = None
         payload = {
             "chat_id": user_id,
-            "text": desc,
+            "text": desc + (health or ""),
             "parse_mode": "HTML",
             "reply_markup":  {
                 "inline_keyboard": [
@@ -95,16 +105,18 @@ def send_query(ids: list):
     for i in ids:
         payload = {
             "chat_id": i,
-            "text": f"Как вы чувствовали себя сегодня?",
+            "text": f"❓Оцените ваше самочувствие",
             "parse_mode": "Markdown",
             "reply_markup": {
                 "inline_keyboard": [
                     [
-                        {"text": "🙂 Все хорошо", "callback_data": "query all_good"},
-                        {"text": "🫩 Слабость", "callback_data": "query weakness"}
+                        {"text": "😣 плохо", "callback_data": "query bad"},
                     ],
                     [
-                        {"text": "🫨 Головные боли", "callback_data": "query head_pain"}
+                        {"text": "😑 приемлемо", "callback_data": "query normal"},
+                    ],
+                    [
+                        {"text": "😀 хорошо", "callback_data": "query good"},
                     ]
                 ]
             }

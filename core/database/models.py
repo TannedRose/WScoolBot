@@ -13,7 +13,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(128), default="None")
 
     profile: Mapped["Profile"] = relationship(back_populates="user", uselist=False)
-    health: Mapped["Health"] = relationship(back_populates="user", uselist=False)
+    health: Mapped[list["Health"]] = relationship(back_populates="user")
 
 
 

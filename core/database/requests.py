@@ -132,3 +132,24 @@ async def change_min_kp_notification(
         await session.commit()
         return True
 
+
+async def get_last_health_by_kp_for_user(
+        user_tg_id: int,
+        kp: int,
+        limit: int = 3
+) -> list[str]:
+    async with LocalSession() as session:
+        stmt = (
+            select(Health.health)
+            .join(User, User.id == Health.user_id)
+            .where(
+                User.user_tg_id == user_tg_id,
+                Health.kp == kp
+            )
+            .order_by(Health.id.desc())
+            .limit(limit)
+        )
+
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
