@@ -78,18 +78,28 @@ def send_notif(ids: list[int], kp: int):
             "parse_mode": "HTML",
             "reply_markup":  {
                 "inline_keyboard": [
-                    [
-                        {"text": "⚙️ Настройки", "callback_data": "settings"},
-                    ],
-                    [
-                        {"text": "🔮 Прогноз на завтра", "callback_data": "predict_weather"}
-                    ],
-                    [
-                        {"text": "📊 Прогноз на сегодня", "callback_data": "now_weather"}
+                        [
+                            {
+                                "text": "😣 плохо",
+                                "callback_data": "query bad",
+                                "style": "danger"
+                            }
+                        ],
+                        [
+                            {
+                                "text": "😑 приемлемо",
+                                "callback_data": "query normal",
+                                "style": "primary"
+                            }
+                        ],
+                        [
+                            {
+                                "text": "😀 хорошо",
+                                "callback_data": "query good",
+                                "style": "success"
+                            }
+                        ]
                     ]
-                ]
-            }
-        }
         try:
             requests.post(url, json=payload, timeout=5)
         except Exception as ex:
